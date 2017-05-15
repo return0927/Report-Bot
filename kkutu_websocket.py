@@ -3,6 +3,8 @@ from tkinter import *
 from time import strftime
 import json
 
+socket_url = input(" Socket URL : ")
+
 with codecs.open("setting.json","r",encoding="UTF-8") as f:
     settings = json.loads("".join(f.readlines()).replace("\r","").replace("\n",""))
 
@@ -98,5 +100,5 @@ def on_close(ws):
     print(" ## Socket died ")
 
 websocket.enableTrace(True)
-ws = websocket.WebSocketApp("ws://kkutu.co.kr:8080/43f0a8be79a20cf67ecf8655add613a6866d2487c0cc87a3440415c5c34b8c7bee50626857c14f46c6a582a2cf2bbf0b", on_message=procedure, on_close=on_close)
+ws = websocket.WebSocketApp(socket_url, on_message=procedure, on_close=on_close)
 ws.run_forever()
