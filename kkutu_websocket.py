@@ -1,7 +1,8 @@
 import websocket, codecs, json, threading
 from tkinter import *
 from time import strftime
-import json
+import json, os
+
 
 socket_url = input(" Socket URL : ")
 
@@ -33,12 +34,16 @@ def log(type, m):
     
 def command(ws,message):
     global is_first
+    global time
+    time = strftime("-%Y%m%d")
     if is_first == True:
         with codecs.open("output"+time+".txt","a",encoding="UTF-8") as f:
             f.write(" #### Daemon Started (time : %s)####\n" % strftime("%Y%m%d-%H%M%S"))
         with codecs.open("chat"+time+".txt","a",encoding="UTF-8") as f:
             f.write(" #### Daemon Started (time : %s)####\n" % strftime("%Y%m%d-%H%M%S"))
         with codecs.open("whisper"+time+".txt","a",encoding="UTF-8") as f:
+            f.write(" #### Daemon Started (time : %s)####\n" % strftime("%Y%m%d-%H%M%S"))
+        with codecs.open("report"+time+".txt","a",encoding="UTF-8") as f:
             f.write(" #### Daemon Started (time : %s)####\n" % strftime("%Y%m%d-%H%M%S"))
         is_first = False
         
@@ -62,11 +67,19 @@ def command(ws,message):
             elif cmd[0] == "!report":
                 arg={};
                 if len(cmd) < 4:
-                    whisper(nickname, " 잘못된 명령어 사용입니다. ")
+                    whisper(nickname, " 잘못된 명령어 사용입니다. 신고번호를 보시려면 !number 를 입력해주세요!")
                     whisper(nickname, " !report [신고번호] [고유번호 or 닉네임(띄어쓰기없음)] [자세한설명]")
                 else:
-                    arg['num']=cmd[1]; arg['person']=cmd[2:]; arg['reason'] = cmd[3:]
-                    whisper(nickname," 준비중입니다.")
+                    arg['num']=cmd[1]; arg['person']=cmd[2]; arg['reason'] = " ".join(cmd[3:])
+                    with codecs.open("report"+time+".txt","a",encoding="UTF-8") as f:
+                        f.write("%s UserNick:%s | UserID: %s | ReportCode: %s | TargetPerson: %s | Reason: %s\n" % (strftime(" %Y.%m.%d %H:%M:%S"),nickname,jsonstring['profile']['id'],arg['num'],arg['person'],arg['reason']) )
+                    #print("%s UserNick:%s | UserID: %s | ReportCode: %s | TargetPerson: %s | Reason: %s" % (strftime(" %Y.%m.%d %H:%M:%S"),nickname,jsonstring['profile']['id'],arg['num'],arg['person'],arg['reason']) )
+                    #print(nickname)
+                    #print(arg['num'])
+                    #print(arg['person'])
+                    #print(arg['reason'])
+                    whisper(nickname," 신고가 접수되었습니다. 빠른 시일 내에 처리해드리겠습니다! - 이은학")
+                                     
                 
             elif cmd[0] == "!number":
                 for n in range(len(keys)):
@@ -88,9 +101,18 @@ def command(ws,message):
             if jsonstring['value'].replace(" ","") == "신고봇나와라":
                 #ws.send('{"type":"talk","value":"안녕하세요 신고봇입니다! 명령어 사용은 귓속말로 해주세요 :D (귓속말은 /ㄷ [닉네임] [할말] 로 하실 수 있습니다!)"}')
                 whisper(nickname.replace(" ",""), "안녕하세요 신고봇입니다! 채팅창에 /e GUEST3196 !commands 를 입력해보세요!")
+            elif jsonstring['value'][:3]== "!소환":
+                whisper(nickname.replace(" ",""), "운영자 이은학에게 호출이 갔습니다!")
+                whisper("이은학","%s 에 %s 가 호출." % (strftime("%Y.%m.%d %H:%M:%S"), nickname+" ("+jsonstring['profile']['id']+")"))
+            elif jsonstring['value'][:3]== "!시공":
+                whisper(nickname.replace(" ",""), "시공조아")
+
+            elif "채팅창" in jsonstring['value'].replace(" ","") and "규칙" in jsonstring['value'].replace(" ",""):
+                whisper(nickname, "모든 채팅창에서는 도배/홍보/욕설/성드립/패드립/특정사이트 발언/반말 등의 채팅은 제재대상입니다. 매너채팅 부탁드립니다.")
+                
             """elif jsonstring['value'] == '앙':
                 ws.send('{"type":"talk","value":"기모띠"}')"""
-            print(nickname+"("+jsonstring['profile']['id'][:5]+") : "+jsonstring['value'])
+            print(strftime(" %Y.%m.%d %H:%M:%S | #")+jsonstring['profile']['id'][:5]+" | "+ nickname+ " : "+jsonstring['value'])
             threading.Thread(target=log, args=("chat", nickname+"("+jsonstring['profile']['id'][:5]+") : "+jsonstring['value'] ) ).start()
             #print(jsonstring)
             #print(jsonstring)
@@ -99,6 +121,8 @@ def command(ws,message):
 def on_close(ws):
     print(" ## Socket died ")
 
+os.chdir("logs/")
 websocket.enableTrace(True)
 ws = websocket.WebSocketApp(socket_url, on_message=procedure, on_close=on_close)
 ws.run_forever()
+
